@@ -5,11 +5,11 @@ async function sendPrompt() {
     outputText.innerText = "Loading";
 
     try {
-        const response = await fetch("http://127.0.0.1:8000/api/chat", 
+        const response = await fetch("http://127.0.0.1:8000/api/analyze-topic", 
             {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({prompt: inputText})
+                body: JSON.stringify({topic: inputText})
             }
         );
         const data = await response.json();
