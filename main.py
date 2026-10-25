@@ -26,16 +26,23 @@ async def analyze_topic_endpoint(request: topicRequest):
     if not news_key:
         raise HTTPException(status_code=500, detail="NEWS_API_KEY is not in env")
 
-    news_url = f"https://newsapi.org{request.topic}&pageSize=3&apiKey={news_key}"
+    clean_topic = request.topic.strip()
+    clean_key = news_key.strip()
+
+    news_url = f"https://newsapi.org/v2/everything?q={clean_topic}&sortBy=popularity&apiKey={clean_key}"
 
     async with httpx.AsyncClient() as httpx_client:
         try:
-            news_response = await httpx_client.get(news_url)
+            headers = {"User-Agent": "MRIAH/1.0"}
+            news_response = await httpx_client.get(news_url, headers=headers)
+            if news_response.status_code != 200:
+                raise Exception(f"Server returned status code {news_response.status_code}")
+            
             news_data = news_response.json()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Could not fetch news: {str(e)}")
 
-    articles = news_data.get(articles, [])
+    articles = news_data.get("articles", [])
     if not articles:
         return {"response": "None found"}
 
