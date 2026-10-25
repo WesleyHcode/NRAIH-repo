@@ -5,7 +5,7 @@ async function sendPrompt() {
     outputText.innerText = "Loading";
 
     try {
-        const response = await fetch("http://127.0.0", 
+        const response = await fetch("http://127.0.0.1:8000/api/chat", 
             {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -13,10 +13,16 @@ async function sendPrompt() {
             }
         );
         const data = await response.json();
-        outputText.innerText = data.response;
-
+        if (data && data.response) {
+            outputText.innerText = data.response
+        } else if (data && data.detail) {
+            outputText.innerText = JSON.stringify(data.detail);
+        } else {
+            outputText.innerText = JSON.stringify(data);
+        }
     } catch(error) {
         outputText.innerText = "Error";
+        print("str{(e)}");
         console.error(error);
     }
 }
