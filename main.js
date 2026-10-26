@@ -55,8 +55,71 @@ async function sendPrompt(retryCount = 0) {
             outputText.innerText = "No articles found for this topic.";
             return;
         }
+
         if (data && data.response) {
-            const rawText = data.response;
+            const htmlCardLayout = document.createElement("div");
+            htmlCardLayout.style.cssText =
+                "display:flex;flex-direction:column;gap:20px;";
+
+            data.analyses.forEach((article, index) => {
+                const card = document.createElement("div");
+                card.style.cssText = 
+                    "background:#ffffff;border:1px solid #e2e8f0;" +
+                    "border-radius:8px;padding:20px;" +
+                    "box-shadow:0 1px 3px rgba(0,0,0,0.05);";
+                
+                const heading = document.createElement("div");
+                heading.style.cssText =
+                    "display:flex;justify-content:space-between;" +
+                    "align-items:flex-start;gap:12px;margin-bottom:10px;";
+                
+                const source = document.createElement("span");
+                source.style.cssText =
+                    "font-weight:700;color:#1e293b;font-size:14px;" +
+                    "text-transform:uppercase;letter-spacing:0.05em;";
+                source.textContent =
+                    `Source ${index + 1}: ${article.source || "Unknown Source"}`;
+
+                const bias = document.createElement("span");
+                bias.textContent = article.bias || "Unknown Bias";
+                bias.style.cssText =
+                    "color:white;padding:4px 10px;font-size:12px;" +
+                    "font-weight:600;border-radius:20px;background:#64748b;";
+
+                if (article.bias === "Left" || article.bias === "Lean Left") {
+                    bias.style.background = "#3b82f6";
+                } else if (
+                    article.bias === "Right" || article.bias === "Lean Right"
+                ) {
+                    bias.style.background = "#ef4444";
+                
+                heading.append(source, bias);
+
+                const title = document.createElement("h4");
+                title.style.cssText =
+                    "margin:0 0 12px;font-size:16px;color:#000000;";
+                title.textContent = article.title || "Untitled Article";
+
+                const perspective = document.createElement("p");
+                perspective.style.cssText = "margin:0 0 8px;font-size:14px;";
+                perspective.textContent =
+                    "Framing & Perspective: " +
+                    (article.perspective || "Not available.");
+
+                const context = document.createElement("p");
+                context.style.cssText = "margin:0;font-size:14px;";
+                context.textContent =
+                    "Omitted Context: " + (article.context || "Not available.");
+
+                card.append(heading, title, perspective, context);
+
+                if (article.url) {
+                    
+                }
+
+    }
+
+            })
             console.log("Raw Groq response:", rawText);
             const articleBlocks = rawText.match(
                 /<analysis_data>([\s\S]*?)<\/analysis_data>/g
