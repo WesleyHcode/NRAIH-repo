@@ -61,7 +61,7 @@ async def analyze_topic_endpoint(request: topicRequest):
     try:
         client = Groq()
         completion = client.chat.completions.create(
-            model = "openai/gpt-oss-20b",
+            model = "llama-3.1-8b-instant",
             messages = [
                 {
                     "role": "system",
