@@ -2,7 +2,20 @@
 
 A way to search, reference, and check sources through a background analysis.  
 How to use:  
-Visit 
+Visit https://wesleyhcode.github.io/SourceSort/
+Search:  
+A text box. Type in any query and hit "Search" or "Clear" to clear results. 
+Ai Says:  
+An AI report of at most three of the most relevant new stories found. 
+
+Sections:
+Title, description, link - self explanatory. 
+Leanings - Left, lean left, lean right, right - AI detected biases. 
+Ommitted Context - shows what the AI thought was left out. 
+
+APIS USED:  
+newsapi  
+groq, openai/gpt-oss-120b  
 
 Available features I'm thinking of inplementing or have inplemented:  
 - AI can determine if a source supports Left or Right viewpoints (DONE!). 
