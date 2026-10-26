@@ -74,28 +74,61 @@ async def analyze_topic_endpoint(request: topicRequest):
 
         async with httpx.AsyncClient(timeout=10.0) as httpx_client:
             try:
-                news_response = await httpx_client.get(
-                    news_url, 
-                    params = {
-                        "q": clean_topic,
-                        "sortBy": "relevancy",
-                        "pageSize": 30,
-                        "language": "en",
-                        "apiKey": clean_key
-                    },
-                    headers = {"User-Agent": "SourceSort/1.0"}
+                
+                baseParams = {
+                    "q": clean_topic,
+                    "pageSize": 30,
+                    "language": "en",
+                    "apiKey": clean_key
+                }
+                
+                relevant_art = await httpx_client.get(
+                    news_url,
+                    params = {**baseParams,
+                    "sortBy": "relevancy"
+                    }
                 )
 
-                if news_response.status_code == 429:
+                if relevant_art.status_code == 429:
                     raise HTTPException(status_code=429, detail=f"NewsAPI rate limit reached. Try again later.")
 
-                news_response.raise_for_status()
-                news_data = news_response.json()
+                relevant_art.raise_for_status()
+                rele_data = relevant_art.json()
 
-                if news_data.get("status") != "ok":
+                if rele_data.get("status") != "ok":
+                    raise HTTPException(status_code=502, detail=f"NewsAPI could not complete the search.")
+
+                pop_art = await httpx_client.get(
+                    news_url,
+                    params = {**baseParams,
+                    "sortBy": "popularity"
+                    }
+                )
+
+                if pop_art.status_code == 429:
+                    raise HTTPException(status_code=429, detail=f"NewsAPI rate limit reached. Try again later.")
+
+                pop_art.raise_for_status()
+                pop_data = pop_art.json()
+
+                if pop_data.get("status") != "ok":
                     raise HTTPException(status_code=502, detail=f"NewsAPI could not complete the search.")
                 
-                articles = news_data.get("articles", [])
+                merge_articles = {}
+                for results in (rele_data["articles"], pop_data["articles"]):
+                    for rank, article in enumerate(results):
+                        url = article.get("url")
+
+                        if not url:
+                            continue
+
+                        if url not in merge_articles:
+                            merge_articles[url] = {"article": article, "score": 0}
+
+                        merge_articles[url]["score"] += 1 / (rank + 1)
+
+                ranking = sorted(merge_articles.values(), key=lambda item: item["score"], reverse=True)
+                articles = [item["article"] for item in ranking]
                 cache_set(news_cache_key, articles, NEWS_CACHE_TTL)
 
             except HTTPException:
