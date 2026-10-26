@@ -34,17 +34,32 @@ async function sendPrompt() {
         const data = await response.json();
         
         if (data && data.response) {
-            const parsedData = JSON.parse(data.response);
-            const analysesArray = parsedData.analyses;
+            const rawText = data.response;
 
-            if (!analysesArray || analysesArray.length === 0) {
-                outputText.innerText = "No analyses available";
+            const articleBlocks = rawText.match(/analysis_data>([\s\S]*?)<\/analysis_data>/g);
+
+            if (!articleBlocks || articleBlocks.length === 0) {
+                outputText.innerText = "Could not parse data stream block. Try searchng again.";
                 return;
             }
 
             let htmlCardLayout = '<div style="display: flex; flex-direction: column; gap: 20px;">';
 
-            analysesArray.forEach((article, index) => {
+            articleBlocks.forEach((block, index) => {
+                const cleanBlock = block.replace(/<\/?analysis_data>/g, ' ');
+
+                const sMatch = cleanBlock.match(/SOURCE:\s*(.*)/i);
+                const tMatch = cleanBlock.match(/TITLE:\s*(.*)/i);
+                const bMatch = cleanBlock.match(/BIAS:\s*(.*)/i);
+                const pMatch = cleanBlock.match(/PERSPECTIVE:\s*(.*)/i);
+                const cMatch = cleanBlock.match(/CONTEXT:\s*(.*)/i);
+
+                const source = sMatch ? sMatch[1].trim() : "Unknown Source";
+                const title = sMatch ? sMatch[1].trim() : "Unknown Title";
+                const bias = sMatch ? sMatch[1].trim() : "Unknown Bias or Center";
+                const perspective = sMatch ? sMatch[1].trim() : "Unknown Perspective";
+                const context = sMatch ? sMatch[1].trim() : "Unknown Ommitted Context";
+
                 let badgeColor = "#64748b";
                 if (article.bias_rating && article.bias_rating.includes("Left")) badgeColor = "#ef4444";
                 if (article.bias_rating && article.bias_rating.includes("Right")) badgeColor = "#3b82f6";
@@ -52,13 +67,13 @@ async function sendPrompt() {
                 htmlCardLayout += `
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                            <span style="font-weight: 700; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; ">Source ${index+1}: ${article.source || "Unknown Source"}</span>
-                            <span style="background: ${badgeColor}; color: white; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 20px;">${article.bias_rating || "Center"}</span>
+                            <span style="font-weight: 700; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; ">Source ${index+1}: ${source}</span>
+                            <span style="background: ${badgeColor}; color: white; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 20px;">${bias}</span>
                         </div>
-                            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #000000; font-weight: 600;">${article.title || "No Title Provided"}</h4>
+                            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #000000; font-weight: 600;">${title}</h4>
 
-                            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${article.dominant_perspective || "No perspective available"}</p>
-                            <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${article.omitted_context || "No ommitted context available"}</p>
+                            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${perspective}</p>
+                            <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${context}</p>
                     </div>
                 `;
             });

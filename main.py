@@ -61,8 +61,7 @@ async def analyze_topic_endpoint(request: topicRequest):
     try:
         client = Groq()
         completion = client.chat.completions.create(
-            model = "llama-3.3-70b-specdec",
-            response_format={"type": "json_object"},
+            model = "openai/gpt-oss-20b",
             messages = [
                 {
                     "role": "system",
@@ -78,7 +77,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                 },
                 {
                     "role": "user",
-                    "content": f"Analyze the following recent articles concerning the topic '{request.topic}':\n\n{news_summary_ai}"
+                    "content": f"Analyze the following recent articles concerning the topic '{request.topic}'. Return the results in JSON format:\n\n{news_summary_ai}"
                 }
             ],
             temperature = 0.1,
