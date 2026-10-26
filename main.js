@@ -46,20 +46,20 @@ async function sendPrompt() {
 
             analysesArray.forEach((article, index) => {
                 let badgeColor = "#64748b";
-                if (article.bias_rating.includes("Left")) badgeColor = "#ef4444";
-                if (article.bias_rating.includes("Right")) badgeColor = "#3b82f6";
+                if (article.bias_rating && article.bias_rating.includes("Left")) badgeColor = "#ef4444";
+                if (article.bias_rating && article.bias_rating.includes("Right")) badgeColor = "#3b82f6";
 
                 htmlCardLayout += `
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                            <span style="font-weight: 700; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; ">Source ${index+1}: ${article.source}</span>
-                            <span style="background: ${badgeColor}; color: white; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 20px;">${article.bias_rating}</span>
+                            <span style="font-weight: 700; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; ">Source ${index+1}: ${article.source || "Unknown Source"}</span>
+                            <span style="background: ${badgeColor}; color: white; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 20px;">${article.bias_rating || "Center"}</span>
                         </div>
-                            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #000000; font-weight: 600;">${article.title}</h4>
+                            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #000000; font-weight: 600;">${article.title || "No Title Provided"}</h4>
 
-                            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${article.dominant_perspective}</p>
-                            <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${article.omitted_context}</p>
-                    </div>
+                            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${article.dominant_perspective || "No perspective available"}</p>
+                            <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${article.omitted_context || "No ommitted context available"}</p>
+                    </div>s
                 `;
             });
 
