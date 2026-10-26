@@ -56,153 +56,88 @@ async function sendPrompt(retryCount = 0) {
             return;
         }
 
-        if (data && data.response) {
-            const htmlCardLayout = document.createElement("div");
-            htmlCardLayout.style.cssText =
-                "display:flex;flex-direction:column;gap:20px;";
+        const htmlCardLayout = document.createElement("div");
+        htmlCardLayout.style.cssText =
+            "display:flex;flex-direction:column;gap:20px;";
 
-            data.analyses.forEach((article, index) => {
-                const card = document.createElement("div");
-                card.style.cssText = 
-                    "background:#ffffff;border:1px solid #e2e8f0;" +
-                    "border-radius:8px;padding:20px;" +
-                    "box-shadow:0 1px 3px rgba(0,0,0,0.05);";
-                
-                const heading = document.createElement("div");
-                heading.style.cssText =
-                    "display:flex;justify-content:space-between;" +
-                    "align-items:flex-start;gap:12px;margin-bottom:10px;";
-                
-                const source = document.createElement("span");
-                source.style.cssText =
-                    "font-weight:700;color:#1e293b;font-size:14px;" +
-                    "text-transform:uppercase;letter-spacing:0.05em;";
-                source.textContent =
-                    `Source ${index + 1}: ${article.source || "Unknown Source"}`;
+        data.analyses.forEach((article, index) => {
+            const card = document.createElement("div");
+            card.style.cssText = 
+                "background:#ffffff;border:1px solid #e2e8f0;" +
+                "border-radius:8px;padding:20px;" +
+                "box-shadow:0 1px 3px rgba(0,0,0,0.05);";
+            
+            const heading = document.createElement("div");
+            heading.style.cssText =
+                "display:flex;justify-content:space-between;" +
+                "align-items:flex-start;gap:12px;margin-bottom:10px;";
+            
+            const source = document.createElement("span");
+            source.style.cssText =
+                "font-weight:700;color:#1e293b;font-size:14px;" +
+                "text-transform:uppercase;letter-spacing:0.05em;";
+            source.textContent =
+                `Source ${index + 1}: ${article.source || "Unknown Source"}`;
 
-                const bias = document.createElement("span");
-                bias.textContent = article.bias || "Unknown Bias";
-                bias.style.cssText =
-                    "color:white;padding:4px 10px;font-size:12px;" +
-                    "font-weight:600;border-radius:20px;background:#64748b;";
+            const bias = document.createElement("span");
+            bias.textContent = article.bias || "Unknown Bias";
+            bias.style.cssText =
+                "color:white;padding:4px 10px;font-size:12px;" +
+                "font-weight:600;border-radius:20px;background:#64748b;";
 
-                if (article.bias === "Left" || article.bias === "Lean Left") {
-                    bias.style.background = "#3b82f6";
-                } else if (
-                    article.bias === "Right" || article.bias === "Lean Right"
-                ) {
-                    bias.style.background = "#ef4444";
-                
-                heading.append(source, bias);
+            if (article.bias === "Left" || article.bias === "Lean Left") {
+                bias.style.background = "#3b82f6";
+            } else if (
+                article.bias === "Right" || article.bias === "Lean Right"
+            ) {
+                bias.style.background = "#ef4444";
+            }
+            heading.append(source, bias);
 
-                const title = document.createElement("h4");
-                title.style.cssText =
-                    "margin:0 0 12px;font-size:16px;color:#000000;";
-                title.textContent = article.title || "Untitled Article";
+            const title = document.createElement("h4");
+            title.style.cssText =
+                "margin:0 0 12px;font-size:16px;color:#000000;";
+            title.textContent = article.title || "Untitled Article";
 
-                const perspective = document.createElement("p");
-                perspective.style.cssText = "margin:0 0 8px;font-size:14px;";
-                perspective.textContent =
-                    "Framing & Perspective: " +
-                    (article.perspective || "Not available.");
+            const perspective = document.createElement("p");
+            perspective.style.cssText = "margin:0 0 8px;font-size:14px;";
+            perspective.textContent =
+                "Framing & Perspective: " +
+                (article.perspective || "Not available.");
 
-                const context = document.createElement("p");
-                context.style.cssText = "margin:0;font-size:14px;";
-                context.textContent =
-                    "Omitted Context: " + (article.context || "Not available.");
+            const context = document.createElement("p");
+            context.style.cssText = "margin:0;font-size:14px;";
+            context.textContent =
+                "Omitted Context: " + (article.context || "Not available.");
 
-                card.append(heading, title, perspective, context);
+            card.append(heading, title, perspective, context);
 
-                if (article.url) {
-                    try {
-                        const url = new URL(article.url)
+            if (article.url) {
+                try {
+                    const url = new URL(article.url)
 
-                        if (url.protocol === "https:" || (url.protocol === "http:") {
-                            const link = document.createElement("a");
-                            link.href = url.href;
-                            link.target = "_blank";
-                            link.rel = "noopener noreferrer";
-                            link.textContent = "Read Original Article →";
-                            link.style.cssText =
-                                "display:inline-block;margin-top:15px;" +
-                                "color:#2563eb;font-weight:600;" +
-                                "text-decoration:none;font-size:14px;";
-                            card.appendChild(link);
-                        }
-                    } catch {
-                        console.warm("Invalid URL");
+                    if (url.protocol === "https:" || url.protocol === "http:") {
+                        const link = document.createElement("a");
+                        link.href = url.href;
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.textContent = "Read Original Article →";
+                        link.style.cssText =
+                            "display:inline-block;margin-top:15px;" +
+                            "color:#2563eb;font-weight:600;" +
+                            "text-decoration:none;font-size:14px;";
+                        card.appendChild(link);
                     }
+                } catch {
+                    console.warn("Invalid URL");
                 }
-
-                htmlCardLayout.appendChild(card);
-
-    }
-
-            })
-            console.log("Raw Groq response:", rawText);
-            const articleBlocks = rawText.match(
-                /<analysis_data>([\s\S]*?)<\/analysis_data>/g
-            );
-
-            if (!articleBlocks || articleBlocks.length === 0) {
-                console.error("Could not parse Groq response:", rawText);
-                outputText.innerHTML = "<strong>Could not parse the AI response.</strong><br>" +
-                                        "The AI returned a response, but it did not match the expected article format.";
-                return;
             }
 
-            let htmlCardLayout = '<div style="display: flex; flex-direction: column; gap: 20px;">';
-
-            articleBlocks.forEach((block, index) => {
-                const cleanBlock = block.replace(/<\/?analysis_data>/g, ' ');
-
-                const sMatch = cleanBlock.match(/SOURCE:\s*(.*)/i);
-                const tMatch = cleanBlock.match(/TITLE:\s*(.*)/i);
-                const bMatch = cleanBlock.match(/BIAS:\s*(.*)/i);
-                const pMatch = cleanBlock.match(/PERSPECTIVE:\s*(.*)/i);
-                const cMatch = cleanBlock.match(/CONTEXT:\s*(.*)/i);
-                const lMatch = cleanBlock.match(/LINK:\s*(.*)/i);
-
-                const source = (sMatch && sMatch[1]) ? sMatch[1].trim() : "Unknown Source";
-                const title = (tMatch && tMatch[1]) ? tMatch[1].trim() : "Unknown Title";
-                const bias = (bMatch && bMatch[1]) ? bMatch[1].trim() : "Unknown Bias or Center";
-                const perspective = (pMatch && pMatch[1]) ? pMatch[1].trim() : "Unknown Perspective";
-                const context = (cMatch && cMatch[1]) ? cMatch[1].trim() : "Unknown Ommitted Context";
-                const link = (lMatch && lMatch[1]) ? lMatch[1].trim() : "#";
-
-                let badgeColor = "#64748b";
-                if (bias.includes("Left")) badgeColor = "#ef4444";
-                if (bias.includes("Right")) badgeColor = "#3b82f6";
-
-                htmlCardLayout += `
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-                            <span style="font-weight: 700; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; ">Source ${index+1}: ${source}</span>
-                            <span style="background: ${badgeColor}; color: white; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 20px;">${bias}</span>
-                        </div>
-                            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: #000000; font-weight: 600;">${title}</h4>
-
-                            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${perspective}</p>
-                            <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${context}</p>
-                        <div style="margin-top: 15px; border-top: 1px dashed #e2e8f0; padding-top: 12px;">
-                            <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 600; text-decoration: none; font-size: 14px;">
-                                Read Original Article &rarr;
-                            </a>
-                        </div>
-                    </div>
-                `;
-            });
-
-            htmlCardLayout += `</div>`
-            outputText.innerHTML = htmlCardLayout;
-
-            localStorage.setItem("savedMediaReport", htmlCardLayout);
-            localStorage.setItem("savedMediaTopic", inputText);
-        } else if (data && data.detail) {
-            outputText.innerText = JSON.stringify(data.detail);
-        } else {
-            outputText.innerText = JSON.stringify(data);
-        }
+            htmlCardLayout.appendChild(card);
+        });
+        outputText.replaceChildren(htmlCardLayout);
+        localStorage.setItem("savedMediaReport", htmlCardLayout.outerHTML);
+        localStorage.setItem("savedMediaTopic", inputText.trim());
     } catch(error) {
         outputText.innerText = "Crash: " + error.message;
         console.error(error);
