@@ -114,8 +114,27 @@ async function sendPrompt(retryCount = 0) {
                 card.append(heading, title, perspective, context);
 
                 if (article.url) {
-                    
+                    try {
+                        const url = new URL(article.url)
+
+                        if (url.protocol === "https:" || (url.protocol === "http:") {
+                            const link = document.createElement("a");
+                            link.href = url.href;
+                            link.target = "_blank";
+                            link.rel = "noopener noreferrer";
+                            link.textContent = "Read Original Article →";
+                            link.style.cssText =
+                                "display:inline-block;margin-top:15px;" +
+                                "color:#2563eb;font-weight:600;" +
+                                "text-decoration:none;font-size:14px;";
+                            card.appendChild(link);
+                        }
+                    } catch {
+                        console.warm("Invalid URL");
+                    }
                 }
+
+                htmlCardLayout.appendChild(card);
 
     }
 
