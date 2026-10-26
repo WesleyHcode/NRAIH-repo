@@ -67,10 +67,30 @@ async function sendPrompt(retryCount = 0) {
                 "border-radius:8px;padding:20px;" +
                 "box-shadow:0 1px 3px rgba(0,0,0,0.05);";
             
+            let img = null;
+            if (article.urlToImage) {
+                try {
+                    const imageURL = new URL(article.urlToImage);
+
+                    if (imageURL.protocol === "https:" || imageURL.protocol === "http:") {
+                        img = document.createElement("img");
+                        img.src = imageURL.href;
+                        img.alt = article.title || "Article Cover Image";
+                        img.style.cssText = 
+                            "width:100%;height:240px;object-fit:cover;" +
+                            "border-radius:6px;display:block;";
+                        card.appendChild(img);
+                    }
+                } catch (error) {
+                    console.warn("Invalid Photo URL");
+                }
+            }
+
             const heading = document.createElement("div");
             heading.style.cssText =
                 "display:flex;justify-content:space-between;" +
-                "align-items:flex-start;gap:12px;margin-bottom:10px;";
+                "align-items:flex-start;gap:12px;margin-bottom:10px;" +
+                (img ? "margin-top:15px;" : "");
             
             const source = document.createElement("span");
             source.style.cssText =
@@ -82,8 +102,9 @@ async function sendPrompt(retryCount = 0) {
             const bias = document.createElement("span");
             bias.textContent = article.bias || "Unknown Bias";
             bias.style.cssText =
-                "color:white;padding:4px 10px;font-size:12px;" +
-                "font-weight:600;border-radius:20px;background:#64748b;";
+                "color:white;padding:4px 10px;font-size:14px;" +
+                "font-weight:600;border-radius:20px;background:#64748b;" + 
+                "margin-left: auto;";
 
             if (article.bias === "Left" || article.bias === "Lean Left") {
                 bias.style.background = "#3b82f6";
@@ -92,12 +113,30 @@ async function sendPrompt(retryCount = 0) {
             ) {
                 bias.style.background = "#ef4444";
             }
+
             heading.append(source, bias);
 
             const title = document.createElement("h4");
             title.style.cssText =
                 "margin:0 0 12px;font-size:16px;color:#000000;";
             title.textContent = article.title || "Untitled Article";
+
+            const author = document.createElement("span");
+            author.style.cssText = 
+                "display:block;font-size:14px;color:#475569;font-style:italic;margin-bottom:8px;";
+            author.textContent = `By ${article.author || "Unknown Author"}`;
+
+            let date = null;
+            if (article.publishedAt) {
+                date = document.createElement("span");
+                date.style.cssText = "font-size:14px;color:#000000;margin-botton:12px";
+                try {
+                    date.textContent = new Date(article.publishedAt).toLocaleDateString(undefined, {year: "numeric", month: "short", day: "numeric"});
+                } catch {
+                    date.textContent = article.publishedAt;
+                }
+                card.appendChild(date);
+            }
 
             const perspective = document.createElement("p");
             perspective.style.cssText = "margin:0 0 8px;font-size:14px;";
@@ -110,7 +149,10 @@ async function sendPrompt(retryCount = 0) {
             context.textContent =
                 "Omitted Context: " + (article.context || "Not available.");
 
-            card.append(heading, title, perspective, context);
+            if (img) card.appendChild(img);
+            card.append(heading, title, author);
+            if (date) card.append(date);
+            card.append(perspective, context);
 
             if (article.url) {
                 try {
@@ -136,7 +178,7 @@ async function sendPrompt(retryCount = 0) {
             htmlCardLayout.appendChild(card);
         });
         outputText.replaceChildren(htmlCardLayout);
-        localStorage.setItem("savedMediaReport", htmlCardLayout.outerHTML);
+        localStorage.setItem("savedMediaReport", outputText.outerHTML);
         localStorage.setItem("savedMediaTopic", inputText.trim());
     } catch(error) {
         outputText.innerText = "Crash: " + error.message;

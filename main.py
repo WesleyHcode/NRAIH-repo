@@ -261,13 +261,20 @@ async def analyze_topic_endpoint(request: topicRequest):
             article = selected[i]
             seen_indices.add(i)
 
+            author_raw = article.get("author")
+            source_name = article.get("source", {}).get("name") or "Unknown Source"
+            fallback_author = author_raw if author_raw else f"{source_name} Staff"
+            
             final_analyses.append({
                 "source": article.get("source", {}).get("name") or "Unknown Source",
                 "title": article.get("title") or "Untitled Article",
+                "author": fallback_author, 
                 "bias": item["bias"],
                 "perspective": item["perspective"],
                 "context": item["context"],
-                "url": article.get("url") or ""
+                "url": article.get("url") or "",
+                "publishedAt": article.get("publishedAt") or "",
+                "urlToImage": article.get("urlToImage") or "",
             })
 
         if not final_analyses:

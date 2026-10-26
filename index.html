@@ -4,18 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SourceSort</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>SourceSort</h1>
+    <div class="dashboard-layout">
+        <div class="main-content">
+            <h2>Search</h2>
+            <textarea id="promptInput" placeholder="Enter a news topic"></textarea>
+            <button onclick="sendPrompt()">Enter</button>
+            <button onclick="clearDashboard()">Clear</button>
 
-    <h2>Search</h2>
-    <textarea id="promptInput" placeholder="Enter a news topic"></textarea>
-    <button onclick="sendPrompt()">Enter</button>
-    <button onclick="clearDashboard()">Clear</button>
-
-    <h2>AI Says</h2>
-    
-    <div id="promptOutput">Response</div>
-    <script src="main.js"></script>
+            <h2>AI Response</h2>
+            
+            <div id="promptOutput">Response</div>
+            <script src="main.js"></script>
+        </div>
+        <div class="sidebar-panel">
+            <h2>Sidebar</h2>
+            <details class="dropdown">
+                <summary>Instructions</summary>
+                <div class="dropdowncont">
+                    <h4>Searching</h4>
+                    <p>1. In the "Search" menu, you will see a textbox for your search.</p>
+                    <p>2. Click "Enter" once you've typed out your prompt.</p>
+                    <p>3. Under "AI Response," you can see some of the most relevant news stories that were found.</p>
+                    <p>4. Each story includes a title, date, AI generated bias and perspective report, and a link to the original article.</p>
+                    <h4>Lookup</h4>
+                    <p>1. In the "Lookup" menu, you will see a textbox for your lookup search.</p>
+                    <p>2. Click "Enter" once you've typed out your prompt.</p>
+                    <p>3. Under "AI Response," you can see if the AI found your story, and if it has generated a report. This may not always for due to sourcing restraints.</p>
+                </div>
+            </details class="dropdown">
+                <summary>How it Works</summary>
+                <div class="dropdowncont">
+                    <h4>Process</h4>
+                    <p>When the user searches, we can fetch the most relevant and popular news stories relating to that prompt using NewsAPI.
+                        We can then send this as a prompt to Groq's AI API, instructing it to generate us a report in JSON, where the AI decides its perspective, bias, and important context that might have been left out.
+                        Taking the JSON report, we can feature it as a full report of a news story.
+                    </p>
+                </div>
+            </details>
+        </div>
+    </div>
 </body>
 </html>
