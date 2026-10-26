@@ -44,13 +44,13 @@ async def analyze_topic_endpoint(request: topicRequest):
 
     articles = news_data.get("articles", [])
     if not articles:
-        return {"response": "None found"}
+        return {"response": '{"analyses":[]}'}
 
     news_summary_ai = ""
-    for idx, art in enumerate(articles):
+    for idx, art in enumerate(articles[:3]):
         source_name = art.get("source", {}).get("name", "Unknown Source")
-        title = art.get("title", "")
-        description = art.get("description", "")
+        title = art.get("title", "")[:100]
+        description = art.get("description", "")[:150]
         news_summary_ai += (
             f"-ARTICLE {idx+1}-\n"
             f"SOURCE {source_name}\n"
@@ -61,7 +61,8 @@ async def analyze_topic_endpoint(request: topicRequest):
     try:
         client = Groq()
         completion = client.chat.completions.create(
-            model = "llama-3.1-8b-instant",
+            model = "llama-3.3-70b-specdec",
+            response_format={"type": "json_object"},
             messages = [
                 {
                     "role": "system",
@@ -80,7 +81,8 @@ async def analyze_topic_endpoint(request: topicRequest):
                     "content": f"Analyze the following recent articles concerning the topic '{request.topic}':\n\n{news_summary_ai}"
                 }
             ],
-            temperature = 0.3,
+            temperature = 0.1,
+            max_tokens=800
         )
         return {"response": completion.choices[0].message.content}
     except Exception as e:

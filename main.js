@@ -59,7 +59,7 @@ async function sendPrompt() {
 
                             <p style="margin: 0 0 8px 0; font-size: 14px;"><strong style="color: #475569;">Framing & Perspective:</strong> ${article.dominant_perspective || "No perspective available"}</p>
                             <p style="margin: 0; font-size: 14px;"><strong style="color: #475569;">Ommitted Context:</strong> ${article.omitted_context || "No ommitted context available"}</p>
-                    </div>s
+                    </div>
                 `;
             });
 
@@ -74,7 +74,7 @@ async function sendPrompt() {
             outputText.innerText = JSON.stringify(data);
         }
     } catch(error) {
-        outputText.innerText = "Error";
+        outputText.innerText = "Crash: " + error.message;
         console.error(error);
     }
 }
