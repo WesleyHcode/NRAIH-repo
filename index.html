@@ -11,9 +11,15 @@
     <div class="dashboard-layout">
         <div class="main-content">
             <h2>Search</h2>
+            <p>Searches for some news articles relating to your topic. Best when using more keywords.</p>
             <textarea id="promptInput" placeholder="Enter a news topic"></textarea>
             <button onclick="sendPrompt()">Enter</button>
             <button onclick="clearDashboard()">Clear</button>
+
+            <h2>Lookup</h2>
+            <p>Paste in a link to a news story and the AI will try to make a report.</p>
+            <textarea id="promptInput" placeholder="Enter a link"></textarea>
+            <button onclick="sendPrompt()">Enter</button>
 
             <h2>AI Response</h2>
             
@@ -35,7 +41,8 @@
                     <p>2. Click "Enter" once you've typed out your prompt.</p>
                     <p>3. Under "AI Response," you can see if the AI found your story, and if it has generated a report. This may not always for due to sourcing restraints.</p>
                 </div>
-            </details class="dropdown">
+            </details>
+            <details class="dropdown">
                 <summary>How it Works</summary>
                 <div class="dropdowncont">
                     <h4>Process</h4>
