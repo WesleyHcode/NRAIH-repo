@@ -6,11 +6,13 @@ from pydantic import BaseModel
 from groq import Groq
 from dotenv import load_dotenv
 import time
+import hashlib
 
 load_dotenv()
 app = FastAPI()
 cache = {}
-CACHE_TTL = 900
+NEWS_CACHE_TTL = 900
+ANALYSIS_CACHE_TTL = 900
 
 def cache_get(key):
     entry = cache.get(key)
@@ -20,13 +22,13 @@ def cache_get(key):
     expires_at, value = entry
 
     if time.monotonic() >= expires_at:
-        del cache(key)
+        del cache[key]
         return None
 
     return value
 
 def cache_set(key, value, ttl):
-    cache[key] = time.monotonic() + ttl, value
+    cache[key] = (time.monotonic() + ttl, value)
 
 def normalize_topic(topic):
     return " ".join(topic.lower().split())
@@ -57,38 +59,52 @@ async def analyze_topic_endpoint(request: topicRequest):
         f"{topic_key}|openai/gpt-oss-120b|v1".encode()
     ).hexdigest()
 
-    cached_analysis = cache.get(f"analysis:{analysis_key}")
+    cached_analysis = cache_get(f"analysis:{analysis_key}")
 
     if cached_analysis is not None:
         return cached_analysis
 
     news_cache_key = f"news:{topic_key}" 
-    articles = cache.get(news_cache_key)
-    
-    news_url = f"https://newsapi.org/v2/everything"
+    articles = cache_get(news_cache_key)
 
-    async with httpx.AsyncClient() as httpx_client:
-        try:
-            headers = {"User-Agent": "MRIAH/1.0"}
-            news_response = await httpx_client.get(
-                news_url, 
-                params = {
-                    "q": clean_topic,
-                    "sortBy": "popularity",
-                    "pageSize": 30,
-                    "langauge": "en",
-                    "apiKey": clean_key
-                },
-                headers=headers,
-            )
-            if news_response.status_code != 200:
-                raise Exception(f"Server returned status code {news_response.status_code}")
-            
-            news_data = news_response.json()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Could not fetch news: {str(e)}")
+    if articles is None:
+        news_url = f"https://newsapi.org/v2/everything"
 
-    articles = news_data.get("articles", [])
+        async with httpx.AsyncClient(timeout=10.0) as httpx_client:
+            try:
+                news_response = await httpx_client.get(
+                    news_url, 
+                    params = {
+                        "q": clean_topic,
+                        "sortBy": "popularity",
+                        "pageSize": 30,
+                        "language": "en",
+                        "apiKey": clean_key
+                    },
+                    headers = {"User-Agent": "MRIAH/1.0"}
+                )
+
+                if news_response.status_code == 429:
+                    raise HTTPException(status_code=429, detail=f"NewsAPI rate limit reached. Try again later.")
+
+                news_response.raise_for_status()
+                news_data = news_response.json()
+
+                if news_data.get("status") != "ok":
+                    raise HTTPException(status_code=502, detail=f"NewsAPI could not complete the search.")
+                
+                articles = news_data.get("articles", [])
+                cache_set(news_cache_key, articles, NEWS_CACHE_TTL)
+
+            except HTTPException:
+                raise 
+            except httpx.TimeoutException:
+                raise HTTPException(status_code=504, detail=f"NewsAPI timed out. Try again.")
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=502, detail=f"NewsAPI returned HTTP {e.response.status_code}.")
+            except httpx.RequestError:
+                raise HTTPException(status_code=502, detail=f"Could not connect to NewsAPI.")
+
     if not articles:
         return {"response": '{"analyses":[]}'}
 
@@ -105,6 +121,9 @@ async def analyze_topic_endpoint(request: topicRequest):
         if len(selected_articles) == 3:
             break
 
+    if not selected_articles:
+        return {"response": '{"analyses":[]}'}
+
     news_summary_ai = ""
     for idx, art in enumerate(selected_articles):
         source_name = art.get("source", {}).get("name", "Unknown Source")
@@ -119,7 +138,8 @@ async def analyze_topic_endpoint(request: topicRequest):
         )
 
     try:
-        client = Groq()
+        client = Groq(timeout = 30.0, max_retries = 0)
+
         completion = client.chat.completions.create(
             model = "openai/gpt-oss-120b",
             messages = [
@@ -146,9 +166,19 @@ async def analyze_topic_endpoint(request: topicRequest):
             temperature = 0.1,
             max_tokens=400
         )
-        return {"response": completion.choices[0].message.content}
+        result = {"response": completion.choices[0].message.content}
+        cache_set(
+            f"analysis:{analysis_key}", result, ANALYSIS_CACHE_TTL
+        )
+        return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Groq request failed: {type(e).__name__}: {e}")
+        if type(e).__name__ == "RateLimitError":
+            raise HTTPException(status_code=429, detail=f"AI rate limit reached. Try again later.")
+        if type(e).__name__ in ("APITimeoutError", "TimeoutError"):
+            raise HTTPException(status_code=504, detail=f"GroqAPI analysis timed out. Try again.")
+        raise HTTPException(status_code=502, detail=f"Could not connect to GroqAPI.")
+        
 
 class chatRequest(BaseModel):
     prompt: str
