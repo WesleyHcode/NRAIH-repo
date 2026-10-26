@@ -1,19 +1,19 @@
 # SourceSort
 
 A way to search, reference, and check sources through a background analysis.  
-How to use:  
-Visit https://wesleyhcode.github.io/SourceSort/
-Search:  
+## How to use:  
+Visit https://wesleyhcode.github.io/SourceSort/  
+## Search:  
 A text box. Type in any query and hit "Search" or "Clear" to clear results. 
-Ai Says:  
+## Ai Says:  
 An AI report of at most three of the most relevant new stories found. 
 
-Sections:
-Title, description, link - self explanatory. 
-Leanings - Left, lean left, lean right, right - AI detected biases. 
-Ommitted Context - shows what the AI thought was left out. 
+## Sections:  
+Title, description, link - self explanatory.  
+Leanings - Left, lean left, lean right, right - AI detected biases.   
+Ommitted Context - shows what the AI thought was left out.   
 
-APIS USED:  
+## APIS USED:  
 newsapi  
 groq, openai/gpt-oss-120b  
 
