@@ -7,6 +7,7 @@ from groq import Groq
 from dotenv import load_dotenv
 import time
 import hashlib
+import json
 
 load_dotenv()
 app = FastAPI()
@@ -57,7 +58,7 @@ async def analyze_topic_endpoint(request: topicRequest):
     topic_key = normalize_topic(clean_topic)
 
     analysis_key = hashlib.sha256(
-        f"{topic_key}|openai/gpt-oss-120b|v1".encode()
+        f"{topic_key}|openai/gpt-oss-120b|v2".encode()
     ).hexdigest()
 
     cached_analysis = cache_get(f"analysis:{analysis_key}")
@@ -79,7 +80,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                     news_url, 
                     params = {
                         "q": clean_topic,
-                        "sortBy": "popularity",
+                        "sortBy": "relevancy",
                         "pageSize": 30,
                         "language": "en",
                         "apiKey": clean_key
@@ -111,35 +112,66 @@ async def analyze_topic_endpoint(request: topicRequest):
     if not articles:
         return {"response": '{"analyses":[]}'}
 
-    selected_articles = []
-    seen_sources = set()
+    selected = []
+    sources = set()
 
     for article in articles:
         source = article.get("source", {}).get("name", "Unknown Source")
 
-        if source not in seen_sources:
-            selected_articles.append(article)
-            seen_sources.add(source)
+        if source not in sources:
+            selected.append(article)
+            sources.add(source)
 
-        if len(selected_articles) == 3:
+        if len(selected) == 3:
             break
 
-    if not selected_articles:
+    if not selected:
         return {"response": '{"analyses":[]}'}
 
     news_summary_ai = ""
-    for idx, art in enumerate(selected_articles):
-        source_name = art.get("source", {}).get("name", "Unknown Source")
-        title = art.get("title", "")[:60]
-        description = art.get("description", "")[:80]
-        url = art.get("url", "#")
-        news_summary_ai += (
-            f"-ARTICLE {idx+1}-\n"
-            f"SOURCE {source_name}\n"
-            f"TITLE {title}\n"
-            f"DESCRIPTION: {description}\n"
-            f"URL: {url}\n"
-        )
+    articles_for_ai = []
+    for idx, art in enumerate(selected):
+        articles_for_ai.append({
+            "article_index": idx,
+            "source": art.get("source", {}).get("name", "Unknown Source"),
+            "title": art.get("title") or "",
+            "description": art.get("description") or ""
+        })
+
+    prompt_articles = [
+        {
+            "article_index": i,
+            "source": a.get("source", {}).get("name", "Unknown Source"),
+            "title": a.get("title", ""),
+            "description": a.get("description") or ""
+        }
+        for i, a in enumerate(selected)
+    ]
+
+    schema = {
+        "type": "object",
+        "properties": {
+            "analyses": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "article_index": {"type": "integer"},
+                        "bias": {
+                            "type": "string",
+                            "enum": ["Left", "Lean Left", "Center", "Lean Right", "Right"]
+                        },
+                        "perspective": {"type": "string"},
+                        "context": {"type": "string"},
+                    },
+                    "required": ["article_index", "bias", "perspective", "context"],
+                    "additionalProperties": False
+                }
+            }
+        },
+        "required": ["analyses"],
+        "additionalProperties": False
+    }
 
     try:
         print("CALLING GROQ NOW")
@@ -151,31 +183,81 @@ async def analyze_topic_endpoint(request: topicRequest):
                 {
                     "role": "system",
                     "content": (
-                        "You are an expert civic media literacy assistant. Analyze each provided articles for bias. "
-                        "For EACH article item, you must output a structured evaluation block matching this exact template format. "
-                        "You MUST wrap each article analysis strictly inside <analysis_data> and </analysis_data> tags:\n\n"
-                        "<analysis_data>\n"
-                        "SOURCE: Name of the news source\n"
-                        "TITLE: Title of the article\n"
-                        "BIAS: Left / Lean Left / Center / Lean Right / Right\n"
-                        "PERSPECTIVE: One short sentence describing the primary narrative framing.\n"
-                        "CONTEXT: One short sentence highlighting what context or views are missing.\n"
-                        "</analysis_data>"
+                        "Analyze each news article's framing and missing context. "
+                        "Return the requested JSON schema. Keep comments concise, "
+                        "ground them in the supplied article information, and use "
+                        "each article_index exactly as provided. Do not assume an "
+                        "article's political leaning from its source alone."
                     )
                 },
                 {
                     "role": "user",
-                    "content": f"Analyze the following recent articles concerning the topic '{request.topic}'. Return the results in JSON format:\n\n{news_summary_ai}"
+                    "content": 
+                        f"Analyze these articles about {json.dumps(clean_topic)}:\n"
+                        f"{json.dumps(prompt_articles)}"
                 }
             ],
-            temperature = 0.1,
-            max_tokens=400
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "news_analysis",
+                    "strict": True,
+                    "schema": schema
+                }
+            },
+            temperature=0.1,
+            max_completion_tokens=2000,
+            reasoning_effort="low"
         )
         print("GROQ CALL SUCCEEDED")
-        result = {"response": completion.choices[0].message.content}
+        raw_content = completion.choices[0].message.content
+        print("GROQ RAW CONTENT:", repr(raw_content))
+        print("GROQ FINISH REASON:", completion.choices[0].finish_reason)
+
+        if not raw_content or not raw_content.strip():
+            raise HTTPException(
+                status_code=502,
+                detail="Groq returned an empty response. Please try again."
+            )
+
+        ai_data = json.loads(raw_content)
+        final_analyses = []
+        seen_indices = set()
+
+        for item in ai_data["analyses"]:
+            i = item["article_index"]
+            if (not isinstance(i, int)
+                or isinstance(i, bool)
+                or i < 0
+                or i >= len(selected)
+                or i in seen_indices
+            ):
+                continue
+
+            article = selected[i]
+            seen_indices.add[i]
+
+            final_analyses.append({
+                "source": article.get("source", {}).get("name") or "Unknown Source",
+                "title": article.get("title") or "Untitled Article",
+                "bias": item["bias"],
+                "perspective": item["perspective"],
+                "context": item["context"],
+                "url": article.get("url") or ""
+            })
+
+        if not final_analyses:
+            raise HTTPException(
+                status_code=502,
+                detail="Groq returned an empty response. Please try again."
+            )
+        result = {"analyses": final_analyses}
         cache_set(
-            f"analysis:{analysis_key}", result, ANALYSIS_CACHE_TTL
+            f"analysis:{analysis_key}",
+            result,
+            ANALYSIS_CACHE_TTL
         )
+
         return result
     except Exception as e:
         print(f"Groq error type: {type(e).__name__}")
