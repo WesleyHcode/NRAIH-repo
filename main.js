@@ -55,13 +55,15 @@ async function sendPrompt(retryCount = 0) {
         }
         if (data && data.response) {
             const rawText = data.response;
-
-            const articleBlocks = rawText.match(/<analysis_data>([\s\S]*?)<\/analysis_data>/g);
+            console.log("Raw Groq response:", rawText);
+            const articleBlocks = rawText.match(
+                /<analysis_data>([\s\S]*?)<\/analysis_data>/g
+            );
 
             if (!articleBlocks || articleBlocks.length === 0) {
-                outputText.innerHTML = "<strong>Rate Limit or Parsing Glitch Detected.</strong><br>" +
-                                       "Groq reached its free-tier token ceiling mid-response. Wait 60 seconds and click search again.<br><br>" +
-                                       "<em>Raw response received:</em><br>" + rawText.replace(/\n/g, "<br>");
+                console.error("Could not parse Groq response:", rawText);
+                outputText.innerHTML = "<strong>Could not parse the AI response.</strong><br>" +
+                                        "The AI returned a response, but it did not match the expected article format.";
                 return;
             }
 

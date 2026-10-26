@@ -46,6 +46,7 @@ class topicRequest(BaseModel):
 
 @app.post("/api/analyze-topic")
 async def analyze_topic_endpoint(request: topicRequest):
+    print("BACKEND: ", request.topic)
     news_key = os.environ.get("NEWS_API_KEY")
     if not news_key:
         raise HTTPException(status_code=500, detail="NEWS_API_KEY is not in env")
@@ -62,8 +63,10 @@ async def analyze_topic_endpoint(request: topicRequest):
     cached_analysis = cache_get(f"analysis:{analysis_key}")
 
     if cached_analysis is not None:
+        print("CACHE HIT: returning saved analysis")
         return cached_analysis
 
+    print("CACHE MISS: proceeding to NewsAPI and Groq")
     news_cache_key = f"news:{topic_key}" 
     articles = cache_get(news_cache_key)
 
@@ -135,9 +138,11 @@ async def analyze_topic_endpoint(request: topicRequest):
             f"SOURCE {source_name}\n"
             f"TITLE {title}\n"
             f"DESCRIPTION: {description}\n"
+            f"URL: {url}\n"
         )
 
     try:
+        print("CALLING GROQ NOW")
         client = Groq(timeout = 30.0, max_retries = 0)
 
         completion = client.chat.completions.create(
@@ -146,7 +151,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                 {
                     "role": "system",
                     "content": (
-                        "You are an expert civic media literacy assistant. Analyze the 3 provided articles for bias. "
+                        "You are an expert civic media literacy assistant. Analyze each provided articles for bias. "
                         "For EACH article item, you must output a structured evaluation block matching this exact template format. "
                         "You MUST wrap each article analysis strictly inside <analysis_data> and </analysis_data> tags:\n\n"
                         "<analysis_data>\n"
@@ -166,13 +171,19 @@ async def analyze_topic_endpoint(request: topicRequest):
             temperature = 0.1,
             max_tokens=400
         )
+        print("GROQ CALL SUCCEEDED")
         result = {"response": completion.choices[0].message.content}
         cache_set(
             f"analysis:{analysis_key}", result, ANALYSIS_CACHE_TTL
         )
         return result
     except Exception as e:
-        print(f"Groq request failed: {type(e).__name__}: {e}")
+        print(f"Groq error type: {type(e).__name__}")
+        print(f"Groq error details: {e}")
+
+        if hasattr(e, "response") and e.response is not None:
+            print(f"Status code: {e.status_code}")
+            print(f"Response headers: {e.response.headers}")
         if type(e).__name__ == "RateLimitError":
             raise HTTPException(status_code=429, detail=f"AI rate limit reached. Try again later.")
         if type(e).__name__ in ("APITimeoutError", "TimeoutError"):
