@@ -39,7 +39,7 @@ async function sendPrompt() {
             const articleBlocks = rawText.match(/<analysis_data>([\s\S]*?)<\/analysis_data>/g);
 
             if (!articleBlocks || articleBlocks.length === 0) {
-                outputText.innerText = "Could not parse data stream block. Try searchng again.";
+                outputText.innerHTML = "<strong>Parsing Error! Raw AI response did not contain the required tags. See response text below:</strong><br><br>" + rawText.replace(/\n/g, "<br>");
                 return;
             }
 
@@ -54,11 +54,11 @@ async function sendPrompt() {
                 const pMatch = cleanBlock.match(/PERSPECTIVE:\s*(.*)/i);
                 const cMatch = cleanBlock.match(/CONTEXT:\s*(.*)/i);
 
-                const source = sMatch && sMatch ? sMatch[1].trim() : "Unknown Source";
-                const title = tMatch && tMatch ? tMatch[1].trim() : "Unknown Title";
-                const bias = bMatch && bMatch ? bMatch[1].trim() : "Unknown Bias or Center";
-                const perspective = pMatch && pMatch ? pMatch[1].trim() : "Unknown Perspective";
-                const context = cMatch && cMatch ? cMatch[1].trim() : "Unknown Ommitted Context";
+                const source = (sMatch && sMatch[1]) ? sMatch[1].trim() : "Unknown Source";
+                const title = (tMatch && tMatch[1]) ? tMatch[1].trim() : "Unknown Title";
+                const bias = (bMatch && bMatch[1]) ? bMatch[1].trim() : "Unknown Bias or Center";
+                const perspective = (pMatch && pMatch[1]) ? pMatch[1].trim() : "Unknown Perspective";
+                const context = (cMatch && cMatch[1]) ? cMatch[1].trim() : "Unknown Ommitted Context";
 
                 let badgeColor = "#64748b";
                 if (bias.includes("Left")) badgeColor = "#ef4444";
