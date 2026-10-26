@@ -1,0 +1,13 @@
+:root {
+    --color-primary: #000000;
+    --color-secondary: #555555;
+    --color-background: #f9f9f9;
+    --color-text: #000000;
+    --color-white: #ffffff;
+
+    --font-main: 'Helvetica Neue', Arial, sans-serif;
+
+    --transition-fast: 0.2s ease-in-out;
+    --radius-md: 8px;
+}
+

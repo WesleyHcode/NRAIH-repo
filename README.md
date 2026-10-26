@@ -1,4 +1,4 @@
-# News and Reporting Artificial Intelligence Helper (NRAIH)
+# SourceSort
 
 A way to search, reference, and check sources through a background analysis.  
 Available features I'm thinking of inplementing:  

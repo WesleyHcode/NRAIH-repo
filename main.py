@@ -83,7 +83,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                         "language": "en",
                         "apiKey": clean_key
                     },
-                    headers = {"User-Agent": "MRIAH/1.0"}
+                    headers = {"User-Agent": "SourceSort/1.0"}
                 )
 
                 if news_response.status_code == 429:
@@ -106,6 +106,8 @@ async def analyze_topic_endpoint(request: topicRequest):
                 raise HTTPException(status_code=502, detail=f"NewsAPI returned HTTP {e.response.status_code}.")
             except httpx.RequestError:
                 raise HTTPException(status_code=502, detail=f"Could not connect to NewsAPI.")
+
+
 
     if not articles:
         return {"analyses": []}

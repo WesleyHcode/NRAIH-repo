@@ -74,7 +74,7 @@ async function sendPrompt(retryCount = 0) {
             
             const source = document.createElement("span");
             source.style.cssText =
-                "font-weight:700;color:#1e293b;font-size:14px;" +
+                "font-weight:700;color:#000000;font-size:14px;" +
                 "text-transform:uppercase;letter-spacing:0.05em;";
             source.textContent =
                 `Source ${index + 1}: ${article.source || "Unknown Source"}`;
@@ -146,7 +146,7 @@ async function sendPrompt(retryCount = 0) {
 
 function clearDashboard() {
     document.getElementById("promptInput").value = "";
-    document.getElementById("promptOutput").innerText = "Your report...";
+    document.getElementById("promptOutput").innerText = "Your report goes here...";
 
     localStorage.removeItem("savedMediaReport");
     localStorage.removeItem("savedMediaTopic");
