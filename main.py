@@ -49,8 +49,9 @@ async def analyze_topic_endpoint(request: topicRequest):
     news_summary_ai = ""
     for idx, art in enumerate(articles[:3]):
         source_name = art.get("source", {}).get("name", "Unknown Source")
-        title = art.get("title", "")[:100]
-        description = art.get("description", "")[:150]
+        title = art.get("title", "")[:60]
+        description = art.get("description", "")[:80]
+        url = art.get("url", "#")
         news_summary_ai += (
             f"-ARTICLE {idx+1}-\n"
             f"SOURCE {source_name}\n"
@@ -83,8 +84,8 @@ async def analyze_topic_endpoint(request: topicRequest):
                     "content": f"Analyze the following recent articles concerning the topic '{request.topic}'. Return the results in JSON format:\n\n{news_summary_ai}"
                 }
             ],
-            temperature = 0.2,
-            max_tokens=600
+            temperature = 0.1,
+            max_tokens=400
         )
         return {"response": completion.choices[0].message.content}
     except Exception as e:
