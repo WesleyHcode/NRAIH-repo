@@ -64,10 +64,8 @@ async def analyze_topic_endpoint(request: topicRequest):
     cached_analysis = cache_get(f"analysis:{analysis_key}")
 
     if cached_analysis is not None:
-        print("CACHE HIT: returning saved analysis")
         return cached_analysis
 
-    print("CACHE MISS: proceeding to NewsAPI and Groq")
     news_cache_key = f"news:{topic_key}" 
     articles = cache_get(news_cache_key)
 
@@ -164,7 +162,6 @@ async def analyze_topic_endpoint(request: topicRequest):
     }
 
     try:
-        print("CALLING GROQ NOW")
         client = Groq(timeout = 30.0, max_retries = 0)
 
         completion = client.chat.completions.create(
@@ -199,10 +196,7 @@ async def analyze_topic_endpoint(request: topicRequest):
             max_completion_tokens=2000,
             reasoning_effort="low"
         )
-        print("GROQ CALL SUCCEEDED")
         raw_content = completion.choices[0].message.content
-        print("GROQ RAW CONTENT:", repr(raw_content))
-        print("GROQ FINISH REASON:", completion.choices[0].finish_reason)
 
         if not raw_content or not raw_content.strip():
             raise HTTPException(
