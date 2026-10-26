@@ -61,18 +61,21 @@ async def analyze_topic_endpoint(request: topicRequest):
     try:
         client = Groq()
         completion = client.chat.completions.create(
-            model = "openai/gpt-oss-20b",
+            model = "openai/gpt-oss-120b",
             messages = [
                 {
                     "role": "system",
                     "content": (
-                        "You are an expert civic media literacy assistant. You will be provided with "
-                        "a list of news articles on a specific topic. Your goal will be to analyze these articles "
-                        "and provide a structured markdown report of: \n"
-                        "1. Dominant Perspectives: What narrative elements or angles are these sources representing or emphasizing?\n"
-                        "2. Potential Bias/Leaning: Identify any political leaning or sensational tone\n"
-                        "3. Ommitted Context: What crucial details or opposing points do you think is left out?\n"
-                        "Keep your tone nonpartisan and strictly education. Also be self aware in your analysis."
+                        "You are an expert civic media literacy assistant. Analyze the 3 provided articles for bias. "
+                        "For EACH article item, you must output a structured evaluation block matching this exact template format. "
+                        "You MUST wrap each article analysis strictly inside <analysis_data> and </analysis_data> tags:\n\n"
+                        "<analysis_data>\n"
+                        "SOURCE: Name of the news source\n"
+                        "TITLE: Title of the article\n"
+                        "BIAS: Left / Lean Left / Center / Lean Right / Right\n"
+                        "PERSPECTIVE: One short sentence describing the primary narrative framing.\n"
+                        "CONTEXT: One short sentence highlighting what context or views are missing.\n"
+                        "</analysis_data>"
                     )
                 },
                 {
@@ -80,8 +83,8 @@ async def analyze_topic_endpoint(request: topicRequest):
                     "content": f"Analyze the following recent articles concerning the topic '{request.topic}'. Return the results in JSON format:\n\n{news_summary_ai}"
                 }
             ],
-            temperature = 0.1,
-            max_tokens=800
+            temperature = 0.2,
+            max_tokens=600
         )
         return {"response": completion.choices[0].message.content}
     except Exception as e:

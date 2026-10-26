@@ -36,7 +36,7 @@ async function sendPrompt() {
         if (data && data.response) {
             const rawText = data.response;
 
-            const articleBlocks = rawText.match(/analysis_data>([\s\S]*?)<\/analysis_data>/g);
+            const articleBlocks = rawText.match(/<analysis_data>([\s\S]*?)<\/analysis_data>/g);
 
             if (!articleBlocks || articleBlocks.length === 0) {
                 outputText.innerText = "Could not parse data stream block. Try searchng again.";
@@ -54,15 +54,15 @@ async function sendPrompt() {
                 const pMatch = cleanBlock.match(/PERSPECTIVE:\s*(.*)/i);
                 const cMatch = cleanBlock.match(/CONTEXT:\s*(.*)/i);
 
-                const source = sMatch ? sMatch[1].trim() : "Unknown Source";
-                const title = sMatch ? sMatch[1].trim() : "Unknown Title";
-                const bias = sMatch ? sMatch[1].trim() : "Unknown Bias or Center";
-                const perspective = sMatch ? sMatch[1].trim() : "Unknown Perspective";
-                const context = sMatch ? sMatch[1].trim() : "Unknown Ommitted Context";
+                const source = sMatch && sMatch ? sMatch[1].trim() : "Unknown Source";
+                const title = tMatch && tMatch ? tMatch[1].trim() : "Unknown Title";
+                const bias = bMatch && bMatch ? bMatch[1].trim() : "Unknown Bias or Center";
+                const perspective = pMatch && pMatch ? pMatch[1].trim() : "Unknown Perspective";
+                const context = cMatch && cMatch ? cMatch[1].trim() : "Unknown Ommitted Context";
 
                 let badgeColor = "#64748b";
-                if (article.bias_rating && article.bias_rating.includes("Left")) badgeColor = "#ef4444";
-                if (article.bias_rating && article.bias_rating.includes("Right")) badgeColor = "#3b82f6";
+                if (bias.includes("Left")) badgeColor = "#ef4444";
+                if (bias.includes("Right")) badgeColor = "#3b82f6";
 
                 htmlCardLayout += `
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
