@@ -5,9 +5,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from groq import Groq
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 app = FastAPI()
+cache = {}
+CACHE_TTL = 900
+
+def cache_get(key):
+    entry = cache.get(key)
+    if entry is None:
+        return None
+
+    expires_at, value = entry
+
+    if time.monotonic() >= expires_at:
+        del cache(key)
+        return None
+
+    return value
+
+def cache_set(key, value, ttl):
+    cache[key] = time.monotonic() + ttl, value
+
+def normalize_topic(topic):
+    return " ".join(topic.lower().split())
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,12 +51,36 @@ async def analyze_topic_endpoint(request: topicRequest):
     clean_topic = request.topic.strip()
     clean_key = news_key.strip()
 
-    news_url = f"https://newsapi.org/v2/everything?q={clean_topic}&sortBy=popularity&apiKey={clean_key}"
+    topic_key = normalize_topic(clean_topic)
+
+    analysis_key = hashlib.sha256(
+        f"{topic_key}|openai/gpt-oss-120b|v1".encode()
+    ).hexdigest()
+
+    cached_analysis = cache.get(f"analysis:{analysis_key}")
+
+    if cached_analysis is not None:
+        return cached_analysis
+
+    news_cache_key = f"news:{topic_key}" 
+    articles = cache.get(news_cache_key)
+    
+    news_url = f"https://newsapi.org/v2/everything"
 
     async with httpx.AsyncClient() as httpx_client:
         try:
             headers = {"User-Agent": "MRIAH/1.0"}
-            news_response = await httpx_client.get(news_url, headers=headers)
+            news_response = await httpx_client.get(
+                news_url, 
+                params = {
+                    "q": clean_topic,
+                    "sortBy": "popularity",
+                    "pageSize": 30,
+                    "langauge": "en",
+                    "apiKey": clean_key
+                },
+                headers=headers,
+            )
             if news_response.status_code != 200:
                 raise Exception(f"Server returned status code {news_response.status_code}")
             
@@ -46,8 +92,21 @@ async def analyze_topic_endpoint(request: topicRequest):
     if not articles:
         return {"response": '{"analyses":[]}'}
 
+    selected_articles = []
+    seen_sources = set()
+
+    for article in articles:
+        source = article.get("source", {}).get("name", "Unknown Source")
+
+        if source not in seen_sources:
+            selected_articles.append(article)
+            seen_sources.add(source)
+
+        if len(selected_articles) == 3:
+            break
+
     news_summary_ai = ""
-    for idx, art in enumerate(articles[:3]):
+    for idx, art in enumerate(selected_articles):
         source_name = art.get("source", {}).get("name", "Unknown Source")
         title = art.get("title", "")[:60]
         description = art.get("description", "")[:80]
