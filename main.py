@@ -110,7 +110,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                 raise HTTPException(status_code=502, detail=f"Could not connect to NewsAPI.")
 
     if not articles:
-        return {"response": '{"analyses":[]}'}
+        return {"analyses": []}
 
     selected = []
     sources = set()
@@ -126,17 +126,7 @@ async def analyze_topic_endpoint(request: topicRequest):
             break
 
     if not selected:
-        return {"response": '{"analyses":[]}'}
-
-    news_summary_ai = ""
-    articles_for_ai = []
-    for idx, art in enumerate(selected):
-        articles_for_ai.append({
-            "article_index": idx,
-            "source": art.get("source", {}).get("name", "Unknown Source"),
-            "title": art.get("title") or "",
-            "description": art.get("description") or ""
-        })
+        return {"analyses": []}
 
     prompt_articles = [
         {
@@ -221,6 +211,11 @@ async def analyze_topic_endpoint(request: topicRequest):
             )
 
         ai_data = json.loads(raw_content)
+        if not isinstance(ai_data, dict) or not isinstance(
+            ai_data.get("analyses"), list
+        ):
+            raise HTTPException(status_code=502, detail="Groq returned an invalid analysis structure.")
+        
         final_analyses = []
         seen_indices = set()
 
@@ -235,7 +230,7 @@ async def analyze_topic_endpoint(request: topicRequest):
                 continue
 
             article = selected[i]
-            seen_indices.add[i]
+            seen_indices.add(i)
 
             final_analyses.append({
                 "source": article.get("source", {}).get("name") or "Unknown Source",
@@ -259,6 +254,8 @@ async def analyze_topic_endpoint(request: topicRequest):
         )
 
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Groq error type: {type(e).__name__}")
         print(f"Groq error details: {e}")
@@ -270,7 +267,7 @@ async def analyze_topic_endpoint(request: topicRequest):
             raise HTTPException(status_code=429, detail=f"AI rate limit reached. Try again later.")
         if type(e).__name__ in ("APITimeoutError", "TimeoutError"):
             raise HTTPException(status_code=504, detail=f"GroqAPI analysis timed out. Try again.")
-        raise HTTPException(status_code=502, detail=f"Could not connect to GroqAPI.")
+        raise HTTPException(status_code=502, detail=f"Could not complete AI analyses.")
         
 
 class chatRequest(BaseModel):

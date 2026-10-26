@@ -40,18 +40,20 @@ async function sendPrompt(retryCount = 0) {
 
         const data = await response.json();
         
-        if (data && data.response === "") {
-            if (retryCount < maxRetries) {
-                const waitTime = (retryCount + 1) * 3000;
-                console.warn(`Empty response received. Retrying in ${waitTime/1000}s...`);
-                await delay(waitTime);
-                return sendPrompt(retryCount + 1);
-            } else {
-                outputText.innerHTML = "<strong>Groq Free-Tier Rate Limit Overload</strong><br>" +
-                                       "The AI servers are currently rate-limiting your workspace. " +
-                                       "Please wait 60 seconds for your rate limit bucket to reset, then try searching again.";
-                return;
-            }
+        if (!response.ok) {
+            outputText.innerText =
+                data.detail || "Analysis failed. Please try again.";
+            return;
+        }
+
+        if (!Array.isArray(data.analyses)) {
+            outputText.innerText = "Invalid response from the server.";
+            return;
+        }
+
+        if (data.analyses.length === 0) {
+            outputText.innerText = "No articles found for this topic.";
+            return;
         }
         if (data && data.response) {
             const rawText = data.response;
