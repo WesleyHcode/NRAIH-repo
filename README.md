@@ -10,7 +10,10 @@ An AI report of at most three of the most relevant new stories found.
 
 ## Sections:  
 Title, description, link - self explanatory.  
-Leanings - Left, lean left, lean right, right - AI detected biases.   
+Leanings - Left, lean left, lean right, right - AI detected biases.  
+Author: The author of the work.  
+Date: The date published.  
+Perspective - Things the AI thinks is the best summary of the viewpoints found in the article.  
 Ommitted Context - shows what the AI thought was left out.   
 
 ## APIS USED:  
