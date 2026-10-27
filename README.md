@@ -1,8 +1,8 @@
-# SourceSort
+# SmartSource
 
 A way to search, reference, and check sources through a background analysis.  
 ## How to use:  
-Visit https://wesleyhcode.github.io/SourceSort/  
+Visit https://wesleyhcode.github.io/SmartSource/  
 ## Search:  
 A text box. Type in any query and hit "Search" or "Clear" to clear results. 
 ## Ai Says:  
