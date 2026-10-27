@@ -305,6 +305,5 @@ async def analyze_topic_endpoint(request: topicRequest):
             raise HTTPException(status_code=504, detail=f"GroqAPI analysis timed out. Try again.")
         raise HTTPException(status_code=502, detail=f"Could not complete AI analyses.")
 
-
 class chatRequest(BaseModel):
     prompt: str
