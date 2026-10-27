@@ -95,7 +95,7 @@ async function sendPrompt(retryCount = 0) {
             const source = document.createElement("span");
             source.style.cssText =
                 "font-weight:700;color:#000000;font-size:14px;" +
-                "text-transform:uppercase;letter-spacing:0.05em;";
+                "letter-spacing:0.05em;";
             source.textContent =
                 `Source ${index + 1}: ${article.source || "Unknown Source"}`;
 
