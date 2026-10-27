@@ -264,7 +264,7 @@ async def analyze_topic_endpoint(request: topicRequest):
             author_raw = article.get("author")
             source_name = article.get("source", {}).get("name") or "Unknown Source"
             fallback_author = author_raw if author_raw else f"{source_name} Staff"
-            
+
             final_analyses.append({
                 "source": article.get("source", {}).get("name") or "Unknown Source",
                 "title": article.get("title") or "Untitled Article",
@@ -304,7 +304,7 @@ async def analyze_topic_endpoint(request: topicRequest):
         if type(e).__name__ in ("APITimeoutError", "TimeoutError"):
             raise HTTPException(status_code=504, detail=f"GroqAPI analysis timed out. Try again.")
         raise HTTPException(status_code=502, detail=f"Could not complete AI analyses.")
-        
+
 
 class chatRequest(BaseModel):
     prompt: str
